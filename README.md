@@ -8,14 +8,44 @@ django-customer-billing-datatrans
 
 
 
+
 Requirements
 ------------
 
 * Python: 3.5 and over
-* Django: 1.11 and over
+* Django: 2.0 and over
 
 
 Usage
 -----
 
 A bridge between django-customer-billing and django-datatrans-gateway
+
+Add to your `INSTALLED_APPS` (django-customer-billing and django-datratrans-gateway should already be present):
+
+    INSTALLED_APPS = (
+        'billing.apps.BillingConfig',
+        'datatrans.apps.DatatransConfig',
+        ...
+        'billing_datatrans.apps.BillingDatatransConfig',
+        ...
+    )
+
+
+Run migrations: 
+
+    ./manage.py migrate
+    
+
+
+Development
+-----------
+
+To install all dependencies:
+
+    python setup.py develop
+
+To run tests:
+
+    pip install pytest-django
+    pytest
