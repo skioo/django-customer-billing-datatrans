@@ -1,4 +1,5 @@
 from billing.models import Account
+from django.contrib.auth.models import User
 from django.test import TestCase
 from pytest import raises
 
@@ -7,7 +8,8 @@ from billing_datatrans.models import AccountTransactionClientRef
 
 class AccountTransactionClientRefTest(TestCase):
     def test_it_should_allow_finding_by_client_ref(self):
-        account = Account.objects.create(owner_id=1234, currency=' CHF')
+        user = User.objects.create_user('a-username')
+        account = Account.objects.create(owner=user, currency=' CHF')
         cr1 = AccountTransactionClientRef.objects.create(account=account)
         cr2 = AccountTransactionClientRef.objects.create(account=account)
         assert cr1.client_ref == 'bilrZPJ7V'
