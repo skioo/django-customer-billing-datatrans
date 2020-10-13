@@ -1,9 +1,14 @@
+from typing import Optional
+
 from billing.models import Account, CreditCard, Transaction
-from datatrans.gateway import PaymentParameters, build_payment_parameters, build_register_credit_card_parameters
+from billing.signals import credit_card_registered
+from datatrans.gateway import (
+    PaymentParameters, build_payment_parameters,
+    build_register_credit_card_parameters,
+)
 from datatrans.models import AliasRegistration, Payment
 from moneyed import Money
 from structlog import get_logger
-from typing import Optional
 
 from .models import AccountTransactionClientRef
 
@@ -68,6 +73,10 @@ def handle_alias_registration_notification(alias_registration: AliasRegistration
             expiry_year=alias_registration.expiry_year,
             psp_object=alias_registration)
         logger.debug('credit-card-registered', credit_card_id=credit_card.pk)
+        credit_card_registered.send(
+            sender=handle_alias_registration_notification,
+            credit_card=credit_card
+        )
         return credit_card
     else:
         return None

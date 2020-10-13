@@ -24,7 +24,7 @@ setup(
         'structlog',
         'hashids',
         'typing',
-        'django-customer-billing',
+        'django-customer-billing>=1.7.2',
         'django-datatrans-gateway',
     ],
     license=billing_datatrans.__licence__,
