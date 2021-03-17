@@ -1,14 +1,13 @@
-from typing import Optional
-
 from billing.models import Account, CreditCard, Transaction
 from billing.signals import credit_card_registered
 from datatrans.gateway import (
     PaymentParameters, build_payment_parameters,
     build_register_credit_card_parameters,
 )
-from datatrans.models import AliasRegistration, Payment
+from datatrans.models import AliasRegistration, Payment, Refund
 from moneyed import Money
 from structlog import get_logger
+from typing import Optional
 
 from .models import AccountTransactionClientRef
 
@@ -80,3 +79,27 @@ def handle_alias_registration_notification(alias_registration: AliasRegistration
         return credit_card
     else:
         return None
+
+
+def handle_refund_notification(refund: Refund) -> Transaction:
+    """
+    Adds a transaction to the related account (regardless of the transaction success)
+
+    :param refund: A refund notified by datatatrans (either successful or not)
+    :return: The transaction
+    """
+    logger.debug('handling-refund-notification', refund=refund)
+    transaction_client_ref = AccountTransactionClientRef.objects.get_by_client_ref(
+        refund.client_ref
+    )
+
+    transaction = Transaction.objects.create(
+        account=transaction_client_ref.account,
+        success=refund.success,
+        amount=-refund.amount,
+        payment_method='DAT',        # Datatrans
+        credit_card_number=None,
+        psp_object=refund
+    )
+    logger.debug('transaction-created', transaction_id=transaction.pk)
+    return transaction
