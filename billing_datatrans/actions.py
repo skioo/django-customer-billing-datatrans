@@ -89,11 +89,8 @@ def handle_refund_notification(refund: Refund) -> Transaction:
     :return: The transaction
     """
     logger.debug('handling-refund-notification', refund=refund)
-    print('********************************************')
-    print(refund.client_ref)
-    transaction_client_ref = AccountTransactionClientRef.objects.get_by_client_ref(
-        refund.client_ref
-    )
+    client_ref_id = refund.client_ref.split('-')[0]
+    transaction_client_ref = AccountTransactionClientRef.objects.get(id=client_ref_id)
 
     transaction = Transaction.objects.create(
         account=transaction_client_ref.account,
