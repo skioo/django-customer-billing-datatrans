@@ -97,7 +97,7 @@ def handle_refund_notification(refund: Refund) -> Transaction:
         success=refund.success,
         amount=-refund.amount,
         payment_method='DAT',        # Datatrans
-        credit_card_number=None,
+        credit_card_number='',
         psp_object=refund
     )
     logger.debug('transaction-created', transaction_id=transaction.pk)
