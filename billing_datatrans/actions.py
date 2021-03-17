@@ -96,7 +96,7 @@ def handle_refund_notification(refund: Refund) -> Transaction:
         account=transaction_client_ref.account,
         success=refund.success,
         amount=-refund.amount,
-        payment_method='DAT',        # Datatrans
+        payment_method='RFD',
         credit_card_number='',
         psp_object=refund
     )
