@@ -1,7 +1,8 @@
-from billing.models import Account, CreditCard, Transaction
+from billing.models import Account, CreditCard, Invoice, Transaction
 from billing.signals import credit_card_registered
 from datatrans.gateway import (
-    PaymentParameters, build_payment_parameters,
+    PaymentParameters,
+    build_payment_parameters,
     build_register_credit_card_parameters,
 )
 from datatrans.models import AliasRegistration, Payment, Refund
@@ -9,7 +10,7 @@ from moneyed import Money
 from structlog import get_logger
 from typing import Optional
 
-from .models import AccountTransactionClientRef
+from .models import AccountTransactionClientRef, CLIENT_REF_PREFIX
 
 logger = get_logger()
 
@@ -89,11 +90,18 @@ def handle_refund_notification(refund: Refund) -> Transaction:
     :return: The transaction
     """
     logger.debug('handling-refund-notification', refund=refund)
-    client_ref_id = refund.client_ref.split('-')[0]
-    transaction_client_ref = AccountTransactionClientRef.objects.get(id=client_ref_id)
+    if CLIENT_REF_PREFIX in refund.client_ref:
+        atcr = AccountTransactionClientRef.objects.get_by_client_ref(refund.client_ref)
+        invoice = None
+        account = atcr.account
+    else:
+        invoice_id = refund.client_ref.split('-')[0]
+        invoice = Invoice.objects.get(id=invoice_id)
+        account = invoice.account
 
     transaction = Transaction.objects.create(
-        account=transaction_client_ref.account,
+        invoice=invoice,
+        account=account,
         success=refund.success,
         amount=-refund.amount,
         payment_method='RFD',
