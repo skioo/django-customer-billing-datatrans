@@ -1,16 +1,16 @@
-from typing import Optional
-
-from billing.models import Account, CreditCard, Transaction
+from billing.models import Account, CreditCard, Invoice, Transaction
 from billing.signals import credit_card_registered
 from datatrans.gateway import (
-    PaymentParameters, build_payment_parameters,
+    PaymentParameters,
+    build_payment_parameters,
     build_register_credit_card_parameters,
 )
-from datatrans.models import AliasRegistration, Payment
+from datatrans.models import AliasRegistration, Payment, Refund
 from moneyed import Money
 from structlog import get_logger
+from typing import Optional
 
-from .models import AccountTransactionClientRef
+from .models import AccountTransactionClientRef, CLIENT_REF_PREFIX
 
 logger = get_logger()
 
@@ -80,3 +80,33 @@ def handle_alias_registration_notification(alias_registration: AliasRegistration
         return credit_card
     else:
         return None
+
+
+def handle_refund_notification(refund: Refund) -> Transaction:
+    """
+    Adds a transaction to the related account (regardless of the transaction success)
+
+    :param refund: A refund notified by datatatrans (either successful or not)
+    :return: The transaction
+    """
+    logger.debug('handling-refund-notification', refund=refund)
+    invoice_id_or_not = refund.client_ref.split('-')[0]
+    if CLIENT_REF_PREFIX in invoice_id_or_not:
+        atcr = AccountTransactionClientRef.objects.get_by_client_ref(invoice_id_or_not)
+        invoice = None
+        account = atcr.account
+    else:
+        invoice = Invoice.objects.get(id=invoice_id_or_not)
+        account = invoice.account
+
+    transaction = Transaction.objects.create(
+        invoice=invoice,
+        account=account,
+        success=refund.success,
+        amount=-refund.amount,
+        payment_method='RFD',
+        credit_card_number='',
+        psp_object=refund
+    )
+    logger.debug('transaction-created', transaction_id=transaction.pk)
+    return transaction
