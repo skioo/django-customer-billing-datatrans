@@ -90,13 +90,13 @@ def handle_refund_notification(refund: Refund) -> Transaction:
     :return: The transaction
     """
     logger.debug('handling-refund-notification', refund=refund)
-    if CLIENT_REF_PREFIX in refund.client_ref:
-        atcr = AccountTransactionClientRef.objects.get_by_client_ref(refund.client_ref)
+    invoice_id_or_not = refund.client_ref.split('-')[0]
+    if CLIENT_REF_PREFIX in invoice_id_or_not:
+        atcr = AccountTransactionClientRef.objects.get_by_client_ref(invoice_id_or_not)
         invoice = None
         account = atcr.account
     else:
-        invoice_id = refund.client_ref.split('-')[0]
-        invoice = Invoice.objects.get(id=invoice_id)
+        invoice = Invoice.objects.get(id=invoice_id_or_not)
         account = invoice.account
 
     transaction = Transaction.objects.create(
